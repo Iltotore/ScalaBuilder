@@ -1,0 +1,28 @@
+group 'io.github.iltotore'
+version '1.0-SNAPSHOT'
+
+allprojects {
+    apply plugin: 'scala'
+    apply from: "${rootProject.rootDir}/scala.gradle"
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation scalaLib()
+        implementation 'org.scala-lang:scala-reflect:2.13.3'
+    }
+
+    tasks.withType(ScalaCompile.class).forEach {
+        it.scalaCompileOptions.additionalParameters = ['-Ymacro-annotations']
+    }
+
+    println(compileScala.scalaCompileOptions.additionalParameters)
+}
+
+subprojects {
+    dependencies {
+        implementation project(':')
+    }
+}
