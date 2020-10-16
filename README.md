@@ -89,7 +89,7 @@ You can use the `@property(name)` annotation to generate variable accessors auto
 private var nameOpt: Option[String] = Option.empty
 ```
 
-gives:
+will generate these methods:
 ```scala
 private var nameOpt: Option[String] = Option.empty
 
