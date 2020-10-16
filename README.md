@@ -1,44 +1,109 @@
-# Gradle Scala Template
-This is a simple template making Scala development easier. This template provides:
-- Shortcuts for Scala library, official modules and third party dependencies
-- Dotty support, including shortcuts, required dependencies and compiling task.
+# ScalaBuilder
+ScalaBuilder is a new way to build objects using a ScalaFX-like DSL.
 
-A plugin designed to automatically implement these features to your project will be created later.
 
-# Usage
-## Scala 2
-The `scala.gradle` file is already imported. The main build script already implements the scala main library.
-
-### Change Scala version
-Simply change the `scalaVersion` variable:
-```gradle
-ext.scalaVersion = '2.13.3' //Default value is 2.13.3
+# Actual problem
+You have a case class:
+```scala
+case class Item(material: String,
+  amount: Int = 1,
+  displayName: Option[String] = Option.empty,
+  enchantments: Seq[Enchatment] = Seq.empty)
 ```
 
-### Import scala official module or third party dependency
-This template provides shortcuts and automatic artifact id generation based on `scalaVersion`.
-```gradle
-dependencies {
-  implementation scalaLib() //Main library
-  implementation scalaModule('scala-collection-contrib', '0.2.1') //org.scala-lang.modules:scala-collection-contrib_2.13:0.2.1
-  implementation scalaDependency('com.typesafe.akka', 'akka-http', '10.2.0-M1') //com.typesafe.akka:akka-http_2.13:10.2.0-M1
+You can define your case class like this:
+```scala
+val item = Item("sword", 1, Option("King's sword"))
+```
+It can become pretty annoying to wrap in Option all your optional argument, in particular for bigger case classes.
+
+This could be better using the builder pattern:
+```scala
+val item = Item.builder("sword")
+  .named("King's sword")
+  .withEnchantment(FireEnchatment(level = 2))
+  .build
+```
+
+The problem is can it feels less elegant when you use enclosed builders:
+```scala
+val item = Item.builder("sword")
+  .named("King's sword")
+  .withEnchantment(FireEnchatment(level = 2))
+  .withMeta(
+    WeaponMeta.builder
+      .withDamage(5)
+      .withDurability(20)
+      .withAttackSpeed(0.5)
+      .build
+  )
+  .build
+```
+
+Thanks to Scala's flexibility, you can define your Item like this:
+```scala
+val item = new Item.Builder("sword") {
+  name = "King's sword"
+  enchantments = Seq(FireEnchantment(2))
+  meta = new WeaponMeta.Builder {
+    damage = 5
+    durability = 10
+    attackSpeed = 0.5
+  }.build
+}.build
+```
+by defining accessors like this:
+```scala
+private var name: Option[String] = Option.empty
+
+def name: Option[String] = nameOpt
+def name_=(value: String): Unit = nameOpt = Option(value)
+```
+
+# Provided solution
+
+## Implicit build
+Firstly, ScalaBuilder provides a simple implicit conversion method to build your object,
+allowing you to do:
+```scala
+import io.github.iltotore.scalabuilder.Builder.autoBuild
+
+
+val item: Item = new Item.Builder("sword") {
+  name = "King's sword"
+  enchantments = Seq(FireEnchantment(2))
+  meta = new WeaponMeta.Builder {
+    damage = 5
+    durability = 10
+    attackSpeed = 0.5
+  }
 }
 ```
 
-## Dotty
-You firstly need to replace the `scala.gradle` import by `dotty.gradle` as it already implements the scala script.
+ScalaBuilder generates the builder semi and fully-automatically using two annotations:
 
-**Note that your IDE (like Intellij IDEA) could not highlight Dotty features correctly. This does not mean you're unable to compile your project.**
-
-### Version and build
-To change the dotty version use the `dottyVersion` variable like the `scalaVersion` one.
-Because central's dotty artifacts change frequently, you can easily edit the wanted build using the `dottyBuild` variable:
-```gradle
-ext {
-  dottyVersion = '0.26.0' //The latest version (02/07/2020) and the template's default.
-  dottyBuild = '20200630-6cbb458-NIGHTLY' //Latest build and default.
-}
+## Property annotation on variable
+You can use the `@property(name)` annotation to generate variable accessors automatically:
+```scala
+@property("name")
+private var nameOpt: Option[String] = Option.empty
 ```
 
-### Compiling
-Compile your Dotty sources is pretty simple: just use the `compileDotty` task.
+gives:
+```scala
+private var nameOpt: Option[String] = Option.empty
+
+def name: Option[String] = nameOpt
+def name_=(value: String): Unit = nameOpt = Option(value)
+```
+
+## Full builder generation
+You can annotate your case class using `@buildable:
+```scala
+@buildable
+case class Item(material: String,
+  amount: Int = 1,
+  displayName: Option[String] = Option.empty,
+  enchantments: Seq[Enchatment] = Seq.empty)
+```
+ScalaBuilder will generate your Item.Builder for you like shown [before](#implicit-build).
