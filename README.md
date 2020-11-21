@@ -1,6 +1,28 @@
 # ScalaBuilder
 ScalaBuilder is a new way to build objects using a ScalaFX-like DSL.
 
+# Install
+<details>
+<summary>Using Gradle</summary>
+
+```gradle
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  implementation 'io.github.iltotore:scalabuilder_2.13:version'
+}
+```
+</details>
+
+<details>
+<summary>Using SBT</summary>
+
+```sbt
+libraryDependencies += "io.github.iltotore" %% "scalabuilder" % "version"
+```
+</details>
 
 # Actual problem
 You have a case class:
